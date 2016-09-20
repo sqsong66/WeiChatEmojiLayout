@@ -25,6 +25,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.wechatemojilayout.fragment.EmotionFragment;
 import com.example.wechatemojilayout.model.Emotion;
 import com.example.wechatemojilayout.model.EmotionCategoryItem;
 import com.example.wechatemojilayout.utlis.DensityUtils;
@@ -96,9 +97,10 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
             @Override
             public void onPageSelected(int position) {
-                int childCount = emotion_ll.getChildCount();
+                curSelectTab = position;
+                int childCount = emotion_tab_ll.getChildCount();
                 for (int i = 0; i < childCount; i++) {
-                    View child = emotion_ll.getChildAt(i);
+                    View child = emotion_tab_ll.getChildAt(i);
                     if (i == position) {
                         child.setBackgroundColor(getResources().getColor(R.color.color_tab_checked));
                     } else {
@@ -124,6 +126,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
             @Override
             protected void onPostExecute(List<EmotionCategoryItem> emotionCategoryItems) {
+                addEmotionFragments(emotionCategoryItems);
                 addEmotionCategoryTab(emotionCategoryItems);
             }
         }.execute();
@@ -249,6 +252,13 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    private void addEmotionFragments(List<EmotionCategoryItem> categoryItems) {
+        for (EmotionCategoryItem categoryItem : categoryItems) {
+            mCategoryFragments.add(EmotionFragment.newInstance((ArrayList<Emotion>) categoryItem.getEmotionList()));
+        }
+        mEmotionCategoryPagerAdapter.notifyDataSetChanged();
+    }
+
     private void addEmotionCategoryTab(List<EmotionCategoryItem> categoryItems) {
         for (int i=0; i<categoryItems.size(); i++) {
             EmotionCategoryItem categoryItem = categoryItems.get(i);
@@ -261,12 +271,13 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
                 categoryView.setBackgroundColor(getResources().getColor(R.color.color_tab_normal));
             }
 
-            final int index = i;
+            categoryView.setTag(i);
             categoryView.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View view) {
-                    if (curSelectTab != index) {
-                        emotion_viewpager.setCurrentItem(index, true);
+                    int tab = (int) view.getTag();
+                    if (curSelectTab != tab) {
+                        emotion_viewpager.setCurrentItem(tab, true);
                     }
                 }
             });
@@ -281,7 +292,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         if (mEmotionDecodeHelper == null) {
             mEmotionDecodeHelper = new EmotionDecodeHelper(getApplicationContext());
         }
-        Bitmap emotionAssetBitmap = mEmotionDecodeHelper.getEmotonAssetBitmap(value, 100);
+        Bitmap emotionAssetBitmap = mEmotionDecodeHelper.getEmotonAssetBitmap(value, 28);
         ImageView imageView = new ImageView(getApplicationContext());
         imageView.setImageBitmap(emotionAssetBitmap);
         RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);

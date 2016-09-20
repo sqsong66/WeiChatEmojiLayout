@@ -28,7 +28,7 @@ public class EmotionDecodeHelper {
                 ImageBitmapCache.getInstance().addBitmapToMemCache(emojiPicName, cacheBitmap);
             }
             if (zoomSize > 0) {
-                resultBitmap = zoomBitmap(cacheBitmap, zoomSize);
+                resultBitmap = zoomBitmap(cacheBitmap, DensityUtils.dip2px(zoomSize));
             } else {
                 resultBitmap = cacheBitmap;
             }

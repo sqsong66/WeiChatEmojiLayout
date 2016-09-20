@@ -11,4 +11,8 @@
 
     <color name="color_tab_checked">#E2E2E2</color>
     <color name="color_tab_normal">#F5F5F5</color>
+    <color name="color_emotion_layout">#F4F4F4</color>
+
+    <color name="color_999999">#999999</color>
+    <color name="color_E4E4E4">#E4E4E4</color>
 </resources>
