@@ -23,9 +23,15 @@ public class EmotionGridAdapter extends RecyclerView.Adapter<EmotionGridAdapter.
     private Context context;
     private List<Emotion> emotionList;
     private EmotionDecodeHelper decodeHelper;
+    private OnEmotionItemClickListener listener;
 
-    public EmotionGridAdapter(Context context, List<Emotion> emotionList) {
+    public interface OnEmotionItemClickListener {
+        void onEmotionItemClick(Emotion emotion, boolean isDelItem);
+    }
+
+    public EmotionGridAdapter(Context context, List<Emotion> emotionList, OnEmotionItemClickListener l) {
         this.context = context;
+        this.listener = l;
         this.emotionList = emotionList;
         this.decodeHelper = new EmotionDecodeHelper(context);
     }
@@ -41,15 +47,28 @@ public class EmotionGridAdapter extends RecyclerView.Adapter<EmotionGridAdapter.
         int size = DensityUtils.dip2px(35);
         ViewGroup.LayoutParams params = holder.itemView.getLayoutParams();
         params.height = size;
-
+        Emotion emotion = null;
+        final boolean isDel;
         if (position == emotionList.size()) {
             holder.emotion_iv.setImageResource(R.drawable.selector_emotion_delete);
+            isDel = true;
         } else {
-            Emotion emotion = emotionList.get(position);
+            emotion = emotionList.get(position);
             String value = emotion.getValue();
             Bitmap bitmap = decodeHelper.getEmotonAssetBitmap(value, 35);
             holder.emotion_iv.setImageBitmap(bitmap);
+            isDel = false;
         }
+
+        final Emotion finalEmotion = emotion;
+        holder.itemView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                if (listener != null) {
+                    listener.onEmotionItemClick(finalEmotion, isDel);
+                }
+            }
+        });
     }
 
     @Override

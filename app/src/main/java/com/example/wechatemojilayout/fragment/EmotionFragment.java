@@ -1,5 +1,6 @@
 package com.example.wechatemojilayout.fragment;
 
+import android.content.Context;
 import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -13,6 +14,7 @@ import android.widget.LinearLayout;
 
 import com.example.wechatemojilayout.R;
 import com.example.wechatemojilayout.adapter.EmotionGridAdapter;
+import com.example.wechatemojilayout.adapter.EmotionGridAdapter.OnEmotionItemClickListener;
 import com.example.wechatemojilayout.adapter.EmotionViewPagerAdapter;
 import com.example.wechatemojilayout.model.Emotion;
 import com.example.wechatemojilayout.utlis.DensityUtils;
@@ -21,12 +23,13 @@ import com.example.wechatemojilayout.view.CirclePagerIndicator;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmotionFragment extends Fragment {
+public class EmotionFragment extends Fragment implements OnEmotionItemClickListener {
     private static final String EMOTION_LIST = "emotion_list";
 
     private ArrayList<Emotion> mEmotionLists;
     private ViewPager emotion_viewpager;
     private LinearLayout dot_ll;
+    private OnEmotionItemClickListener mListener;
 
     public static EmotionFragment newInstance(ArrayList<Emotion> emotionLists) {
         EmotionFragment fragment = new EmotionFragment();
@@ -109,9 +112,26 @@ public class EmotionFragment extends Fragment {
         recyclerView.setLayoutManager(new GridLayoutManager(getActivity(), 7));
         EmotionGridItemDecoration decoration = new EmotionGridItemDecoration(7, DensityUtils.dip2px(10), false);
         recyclerView.addItemDecoration(decoration);
-        EmotionGridAdapter adapter = new EmotionGridAdapter(getActivity(), emotionList);
+        EmotionGridAdapter adapter = new EmotionGridAdapter(getActivity(), emotionList, this);
         recyclerView.setAdapter(adapter);
         return recyclerView;
+    }
+
+    @Override
+    public void onEmotionItemClick(Emotion emotion, boolean isDelItem) {
+        if (mListener != null) {
+            mListener.onEmotionItemClick(emotion, isDelItem);
+        }
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+        if (context instanceof OnEmotionItemClickListener) {
+            mListener = (OnEmotionItemClickListener) context;
+        } else {
+            throw new RuntimeException(context.toString() + " must implement OnEmotionItemClickListener");
+        }
     }
 
     public static class EmotionGridItemDecoration extends RecyclerView.ItemDecoration {

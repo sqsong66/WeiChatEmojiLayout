@@ -25,6 +25,7 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.wechatemojilayout.adapter.EmotionGridAdapter;
 import com.example.wechatemojilayout.fragment.EmotionFragment;
 import com.example.wechatemojilayout.model.Emotion;
 import com.example.wechatemojilayout.model.EmotionCategoryItem;
@@ -35,7 +36,7 @@ import com.example.wechatemojilayout.utlis.EmotionDecodeHelper;
 import java.util.ArrayList;
 import java.util.List;
 
-public class EmotionActivity extends AppCompatActivity implements View.OnClickListener {
+public class EmotionActivity extends AppCompatActivity implements View.OnClickListener, EmotionGridAdapter.OnEmotionItemClickListener {
 
     private TextView send_tv;
     private ImageView plus_iv;
@@ -172,6 +173,16 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
             case R.id.send_tv:
                 Toast.makeText(EmotionActivity.this, "Send", Toast.LENGTH_SHORT).show();
                 break;
+        }
+    }
+
+    @Override
+    public void onEmotionItemClick(Emotion emotion, boolean isDelItem) {
+        if (emotion != null && !isDelItem) {
+            String name = emotion.getName();
+            Toast.makeText(EmotionActivity.this, name, Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(EmotionActivity.this, "Del Clicked!", Toast.LENGTH_SHORT).show();
         }
     }
 
