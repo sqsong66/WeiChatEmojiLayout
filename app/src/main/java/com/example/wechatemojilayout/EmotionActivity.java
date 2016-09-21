@@ -14,7 +14,14 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
+import android.text.InputFilter;
+import android.text.Spannable;
+import android.text.SpannableString;
+import android.text.Spanned;
 import android.text.TextWatcher;
+import android.text.style.ImageSpan;
+import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -32,6 +39,7 @@ import com.example.wechatemojilayout.model.EmotionCategoryItem;
 import com.example.wechatemojilayout.utlis.DensityUtils;
 import com.example.wechatemojilayout.utlis.EmotionAssetDbHelper;
 import com.example.wechatemojilayout.utlis.EmotionDecodeHelper;
+import com.example.wechatemojilayout.utlis.ImageBitmapCache;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,6 +61,8 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     private EmotionCategoryPagerAdapter mEmotionCategoryPagerAdapter;
 
     private int curSelectTab = 0;
+    private int inputKeyBoardHeight;
+    private EmotionAssetDbHelper mEmotionAssetDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -80,21 +90,45 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     private void initEvents() {
+        mEmotionAssetDbHelper = new EmotionAssetDbHelper(getApplicationContext());
+        mEmotionDecodeHelper = new EmotionDecodeHelper(getApplicationContext());
+
         emotion_face_iv.setOnClickListener(this);
         input_edit.addTextChangedListener(textWatcher);
+        input_edit.setFilters(new InputFilter[]{editFilter});
+        input_edit.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                if (emotion_ll.isShown()) {
+                    lockContentHeight();
+                    hideEmotionLayout();
+                    unLockContentHeight();
+                    return true;
+                }
+                return false;
+            }
+        });
         input_edit.post(new Runnable() {
             @Override
             public void run() {
                 input_edit.requestFocus();
             }
         });
+        emotion_ll.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                inputKeyBoardHeight = DensityUtils.getSupportSoftInputHeight(EmotionActivity.this);
+            }
+        }, 200);
 
         emotion_viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+            }
 
             @Override
-            public void onPageScrollStateChanged(int state) {}
+            public void onPageScrollStateChanged(int state) {
+            }
 
             @Override
             public void onPageSelected(int position) {
@@ -117,12 +151,11 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     }
 
     private void initEmotions() {
-        new AsyncTask<Void, Void, List<EmotionCategoryItem>>(){
+        new AsyncTask<Void, Void, List<EmotionCategoryItem>>() {
 
             @Override
             protected List<EmotionCategoryItem> doInBackground(Void... voids) {
-                EmotionAssetDbHelper assetDbHelper = new EmotionAssetDbHelper(getApplicationContext());
-                return assetDbHelper.queryEmotionList(EmotionAssetDbHelper.DB_EMOTION);
+                return mEmotionAssetDbHelper.queryEmotionList(EmotionAssetDbHelper.DB_EMOTION);
             }
 
             @Override
@@ -135,10 +168,12 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
     private TextWatcher textWatcher = new TextWatcher() {
         @Override
-        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        }
 
         @Override
-        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
+        public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+        }
 
         @Override
         public void afterTextChanged(Editable editable) {
@@ -152,7 +187,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
                 set.playTogether(alpha1, alpha2);
                 set.start();
                 send_tv.setOnClickListener(EmotionActivity.this);
-            } else if (inputStr.length() == 0 && alpha == 1){
+            } else if (inputStr.length() == 0 && alpha == 1) {
                 ObjectAnimator alpha1 = ObjectAnimator.ofFloat(send_tv, "alpha", 1, 0);
                 ObjectAnimator alpha2 = ObjectAnimator.ofFloat(plus_iv, "alpha", 0, 1);
                 AnimatorSet set = new AnimatorSet();
@@ -161,6 +196,25 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
                 set.start();
                 send_tv.setOnClickListener(null);
             }
+        }
+    };
+
+    private InputFilter editFilter = new InputFilter() {
+        @Override
+        public CharSequence filter(CharSequence source, int i, int i1, Spanned spanned, int i2, int i3) {
+            if ("".equals(source)) {
+                return source;
+            }
+            CharSequence result = source;
+            if (result.toString().startsWith("[")) {
+                String emojiPicName = mEmotionAssetDbHelper.queryEmotionValue(EmotionAssetDbHelper.DB_EMOTION, source.toString());
+                Bitmap bitmap = mEmotionDecodeHelper.getEmotonAssetBitmap(emojiPicName, 23);
+                SpannableString emotionSpannable = new SpannableString(result);
+                ImageSpan imageSpan = new ImageSpan(getApplicationContext(), bitmap);
+                emotionSpannable.setSpan(imageSpan, 0, result.length(), Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
+                result = emotionSpannable;
+            }
+            return result;
         }
     };
 
@@ -180,9 +234,11 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     public void onEmotionItemClick(Emotion emotion, boolean isDelItem) {
         if (emotion != null && !isDelItem) {
             String name = emotion.getName();
-            Toast.makeText(EmotionActivity.this, name, Toast.LENGTH_SHORT).show();
+            Editable editable = input_edit.getEditableText();
+            int start = input_edit.getSelectionStart();
+            editable.insert(start, name);
         } else {
-            Toast.makeText(EmotionActivity.this, "Del Clicked!", Toast.LENGTH_SHORT).show();
+            input_edit.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
         }
     }
 
@@ -194,26 +250,39 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
             lockContentHeight();
             hideEmotionLayout();
             unLockContentHeight();
-            emotion_face_iv.setImageResource(R.drawable.selector_publish_face);
         } else {
-            lockContentHeight();
-            showEmotionLayout();
-            unLockContentHeight();
-            emotion_face_iv.setImageResource(R.drawable.selector_publish_keyboard);
+            // 如果键盘是显示的，则需要锁定布局切换emoji表情布局防止出现闪跳；
+            // 否则不需要锁定布局，如果键盘未显示锁定了布局，就会导致emoji布局无法弹出
+            if (isSoftInputShown()) {
+                lockContentHeight();
+                showEmotionLayout();
+                unLockContentHeight();
+            } else {
+                showEmotionLayout();
+            }
         }
+    }
+
+    /**
+     * 判断键盘当前是否有显示
+     *
+     * @return true: 键盘显示  false: 键盘未显示
+     */
+    private boolean isSoftInputShown() {
+        return DensityUtils.getSupportSoftInputHeight(this) != 0;
     }
 
     /**
      * 显示Emoji表情布局
      */
     private void showEmotionLayout() {
-        int inputKeyBoardHeight = DensityUtils.getSupportSoftInputHeight(this);
         if (inputKeyBoardHeight == 0) {
-            inputKeyBoardHeight = DensityUtils.dip2px(250);
+            inputKeyBoardHeight = DensityUtils.getSupportSoftInputHeight(this);
         }
         hideInputKeyBoard(true);
         emotion_ll.getLayoutParams().height = inputKeyBoardHeight;
         emotion_ll.setVisibility(View.VISIBLE);
+        emotion_face_iv.setImageResource(R.drawable.selector_publish_keyboard);
     }
 
     /**
@@ -222,6 +291,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     private void hideEmotionLayout() {
         emotion_ll.setVisibility(View.GONE);
         hideInputKeyBoard(false);
+        emotion_face_iv.setImageResource(R.drawable.selector_publish_face);
     }
 
     /**
@@ -270,8 +340,12 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         mEmotionCategoryPagerAdapter.notifyDataSetChanged();
     }
 
+    /**
+     * 添加底部的分类tab栏
+     * @param categoryItems emoji表情分类集合
+     */
     private void addEmotionCategoryTab(List<EmotionCategoryItem> categoryItems) {
-        for (int i=0; i<categoryItems.size(); i++) {
+        for (int i = 0; i < categoryItems.size(); i++) {
             EmotionCategoryItem categoryItem = categoryItems.get(i);
             Emotion emotion = categoryItem.getEmotionList().get(0);
             String value = emotion.getValue();
@@ -296,13 +370,16 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    /**
+     * 创建底部的emoji分类tab栏，将分类中的第一个表情作为图标
+     * @param value 表情图片名称
+     * @return 分类tab布局
+     */
     private View generateCatView(String value) {
         RelativeLayout layout = new RelativeLayout(getApplicationContext());
         LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(DensityUtils.dip2px(60), ViewGroup.LayoutParams.MATCH_PARENT);
         layout.setLayoutParams(layoutParams);
-        if (mEmotionDecodeHelper == null) {
-            mEmotionDecodeHelper = new EmotionDecodeHelper(getApplicationContext());
-        }
+
         Bitmap emotionAssetBitmap = mEmotionDecodeHelper.getEmotonAssetBitmap(value, 28);
         ImageView imageView = new ImageView(getApplicationContext());
         imageView.setImageBitmap(emotionAssetBitmap);
@@ -317,6 +394,24 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     protected void onResume() {
         super.onResume();
         hideEmotionLayout();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        ImageBitmapCache.getInstance().clearMemCache();
+    }
+
+    @Override
+    public boolean onKeyDown(int keyCode, KeyEvent event) {
+        if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            if (emotion_ll.isShown()) {
+                hideEmotionLayout();
+                hideInputKeyBoard(true);
+                return true;
+            }
+        }
+        return super.onKeyDown(keyCode, event);
     }
 
     public static class EmotionCategoryPagerAdapter extends FragmentPagerAdapter {
@@ -338,4 +433,5 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
             return fragments.size();
         }
     }
+
 }

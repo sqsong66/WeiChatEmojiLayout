@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Matrix;
+import android.util.Log;
 
 import java.io.InputStream;
 
@@ -33,6 +34,7 @@ public class EmotionDecodeHelper {
                 InputStream inputStream = context.getAssets().open(emojiPicName);
                 cacheBitmap = BitmapFactory.decodeStream(inputStream);
                 ImageBitmapCache.getInstance().addBitmapToMemCache(emojiPicName, cacheBitmap);
+                Log.e("sqsong", "Get bitmap from assets folder!");
             }
             if (zoomSize > 0) {
                 resultBitmap = zoomBitmap(cacheBitmap, DensityUtils.dip2px(zoomSize));
