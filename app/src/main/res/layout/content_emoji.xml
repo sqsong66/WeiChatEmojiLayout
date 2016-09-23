@@ -6,12 +6,13 @@
     android:layout_height="match_parent"
     android:background="@color/color_background"
     android:orientation="vertical"
+    android:id="@+id/root_ll"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
     tools:context=".EmotionActivity"
     tools:showIn="@layout/activity_emoji">
 
     <android.support.v7.widget.RecyclerView
-        android:id="@+id/talk_recyclerView"
+        android:id="@+id/message_recyclerView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_weight="1" />
@@ -20,7 +21,8 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/color_emotion_layout"
-        android:orientation="vertical">
+        android:orientation="vertical"
+        android:visibility="visible">
 
         <View style="@style/Style_Line" />
 
@@ -39,7 +41,8 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
-                android:backgroundTint="@color/color_edit" />
+                android:backgroundTint="@color/color_edit"
+                android:maxLines="2" />
 
             <ImageView
                 android:id="@+id/emotion_face_iv"

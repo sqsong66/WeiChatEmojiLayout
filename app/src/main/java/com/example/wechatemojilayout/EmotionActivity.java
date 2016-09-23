@@ -11,6 +11,7 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.text.Editable;
@@ -24,18 +25,20 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.example.wechatemojilayout.adapter.EmotionGridAdapter;
+import com.example.wechatemojilayout.adapter.MessageAdapter;
 import com.example.wechatemojilayout.fragment.EmotionFragment;
 import com.example.wechatemojilayout.model.Emotion;
 import com.example.wechatemojilayout.model.EmotionCategoryItem;
+import com.example.wechatemojilayout.model.Message;
 import com.example.wechatemojilayout.utlis.DensityUtils;
 import com.example.wechatemojilayout.utlis.EmotionAssetDbHelper;
 import com.example.wechatemojilayout.utlis.EmotionDecodeHelper;
@@ -49,20 +52,23 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     private TextView send_tv;
     private ImageView plus_iv;
     private EditText input_edit;
+    private LinearLayout root_ll;
     private LinearLayout emotion_ll;
     private ImageView emotion_face_iv;
     private ViewPager emotion_viewpager;
     private LinearLayout emotion_tab_ll;
-    private RecyclerView talk_recyclerView;
+    private RecyclerView message_recyclerView;
 
+    private MessageAdapter mMessageAdapter;
     private InputMethodManager inputMethodManager;
     private EmotionDecodeHelper mEmotionDecodeHelper;
+    private EmotionAssetDbHelper mEmotionAssetDbHelper;
+    private List<Message> mMessageList = new ArrayList<>();
     private List<Fragment> mCategoryFragments = new ArrayList<>();
     private EmotionCategoryPagerAdapter mEmotionCategoryPagerAdapter;
 
     private int curSelectTab = 0;
     private int inputKeyBoardHeight;
-    private EmotionAssetDbHelper mEmotionAssetDbHelper;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,7 +85,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         toolbar.setTitle("微信");
         setSupportActionBar(toolbar);
 
-        talk_recyclerView = (RecyclerView) findViewById(R.id.talk_recyclerView);
+        message_recyclerView = (RecyclerView) findViewById(R.id.message_recyclerView);
         input_edit = (EditText) findViewById(R.id.input_edit);
         emotion_face_iv = (ImageView) findViewById(R.id.emotion_face_iv);
         plus_iv = (ImageView) findViewById(R.id.plus_iv);
@@ -87,6 +93,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         emotion_ll = (LinearLayout) findViewById(R.id.emotion_ll);
         emotion_viewpager = (ViewPager) findViewById(R.id.emotion_viewpager);
         emotion_tab_ll = (LinearLayout) findViewById(R.id.emotion_tab_ll);
+        root_ll = (LinearLayout) findViewById(R.id.root_ll);
     }
 
     private void initEvents() {
@@ -148,6 +155,35 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
         mEmotionCategoryPagerAdapter = new EmotionCategoryPagerAdapter(getSupportFragmentManager(), mCategoryFragments);
         emotion_viewpager.setAdapter(mEmotionCategoryPagerAdapter);
+
+        message_recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        mMessageAdapter = new MessageAdapter(this, mMessageList);
+        message_recyclerView.setAdapter(mMessageAdapter);
+
+        root_ll.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                int heightDiff = root_ll.getRootView().getHeight() - root_ll.getHeight();
+                if (heightDiff > 500) { // if more than 100 pixels, its probably a keyboard...
+                    message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
+                }
+            }
+        });
+
+        message_recyclerView.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View view, MotionEvent motionEvent) {
+                //防止滑动recyclerview时，touch事件拦截recyclerview的滚动事件
+                if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
+                    if (emotion_ll.isShown()) {
+                        hideEmotionLayout();
+                    }
+                    hideInputKeyBoard(true);
+                    return true;
+                }
+                return false;
+            }
+        });
     }
 
     private void initEmotions() {
@@ -179,7 +215,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         public void afterTextChanged(Editable editable) {
             String inputStr = input_edit.getText().toString();
             float alpha = send_tv.getAlpha();
-            if (inputStr.length() > 0 && alpha == 0) { //设置添加按钮和发送按钮显示和消失动画
+            if (inputStr.length() >= 0 && alpha == 0) { //设置添加按钮和发送按钮显示和消失动画
                 ObjectAnimator alpha1 = ObjectAnimator.ofFloat(send_tv, "alpha", 0, 1);
                 ObjectAnimator alpha2 = ObjectAnimator.ofFloat(plus_iv, "alpha", 1, 0);
                 AnimatorSet set = new AnimatorSet();
@@ -225,9 +261,18 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
                 toggleEmotionVisibility();
                 break;
             case R.id.send_tv:
-                Toast.makeText(EmotionActivity.this, "Send", Toast.LENGTH_SHORT).show();
+                refreshMessageList();
                 break;
         }
+    }
+
+    private void refreshMessageList() {
+        String text = input_edit.getText().toString();
+        Message message = new Message(text, "");
+        mMessageList.add(message);
+        mMessageAdapter.notifyItemInserted(mMessageList.size());
+        input_edit.setText("");
+        message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
     }
 
     @Override
@@ -265,7 +310,6 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
     /**
      * 判断键盘当前是否有显示
-     *
      * @return true: 键盘显示  false: 键盘未显示
      */
     private boolean isSoftInputShown() {
@@ -283,6 +327,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         emotion_ll.getLayoutParams().height = inputKeyBoardHeight;
         emotion_ll.setVisibility(View.VISIBLE);
         emotion_face_iv.setImageResource(R.drawable.selector_publish_keyboard);
+        message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
     }
 
     /**
@@ -298,8 +343,8 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
      * 锁定表情布局之上的内容
      */
     private void lockContentHeight() {
-        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) talk_recyclerView.getLayoutParams();
-        params.height = talk_recyclerView.getHeight();
+        LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) message_recyclerView.getLayoutParams();
+        params.height = message_recyclerView.getHeight();
         params.weight = 0;
     }
 
@@ -310,7 +355,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         emotion_ll.postDelayed(new Runnable() {
             @Override
             public void run() {
-                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) talk_recyclerView.getLayoutParams();
+                LinearLayout.LayoutParams params = (LinearLayout.LayoutParams) message_recyclerView.getLayoutParams();
                 params.weight = 1;
             }
         }, 200);
@@ -318,7 +363,6 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
     /**
      * 是否隐藏软键盘
-     *
      * @param hide true：隐藏软键盘  false:显示软键盘
      */
     private void hideInputKeyBoard(boolean hide) {
