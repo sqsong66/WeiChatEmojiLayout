@@ -68,12 +68,6 @@ public class DensityUtils {
             Log.e("sqsong", "EmotionKeyboard--Warning: value of softInputHeight is below zero!");
         }
 
-//        if (softInputHeight > 0) {
-//            PreferencesHelper helper = activity.getPreferenceHelper();
-//            if (helper != null) {
-//                helper.put(PublishStatusActivity.SOFT_INPUT_HEIGHT, softInputHeight);
-//            }
-//        }
         return softInputHeight;
     }
 

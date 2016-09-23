@@ -59,15 +59,24 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     private LinearLayout emotion_tab_ll;
     private RecyclerView message_recyclerView;
 
+    /** 消息适配器*/
     private MessageAdapter mMessageAdapter;
+    /** 输入法管理器*/
     private InputMethodManager inputMethodManager;
+    /** 根据表情图片名称从assets目录获取标签bitmap帮助类*/
     private EmotionDecodeHelper mEmotionDecodeHelper;
+    /** 数据库表情信息查询帮助类*/
     private EmotionAssetDbHelper mEmotionAssetDbHelper;
+    /** 消息集合*/
     private List<Message> mMessageList = new ArrayList<>();
+    /** 分类标签fragment集合*/
     private List<Fragment> mCategoryFragments = new ArrayList<>();
+    /** 外层表情分类ViewPager适配器*/
     private EmotionCategoryPagerAdapter mEmotionCategoryPagerAdapter;
 
+    /** 当前选中的表情tab*/
     private int curSelectTab = 0;
+    /** 键盘高度*/
     private int inputKeyBoardHeight;
 
     @Override
@@ -124,6 +133,8 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         emotion_ll.postDelayed(new Runnable() {
             @Override
             public void run() {
+                // 进入activity获取键盘高度，防止进入界面后，点击返回键隐藏键盘，再点击表情图标时，由于键盘未弹出测量到的键盘
+                // 高度为0导致emoji表情无法弹出来
                 inputKeyBoardHeight = DensityUtils.getSupportSoftInputHeight(EmotionActivity.this);
             }
         }, 200);
@@ -164,7 +175,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
             @Override
             public void onGlobalLayout() {
                 int heightDiff = root_ll.getRootView().getHeight() - root_ll.getHeight();
-                if (heightDiff > 500) { // if more than 100 pixels, its probably a keyboard...
+                if (heightDiff > 500) { // 当键盘或者表情布局弹出来时，让消息列表滚动到最低部
                     message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
                 }
             }
@@ -173,7 +184,8 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         message_recyclerView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
-                //防止滑动recyclerview时，touch事件拦截recyclerview的滚动事件
+                // 点击键盘或者表情以外部分时，让键盘或者表情布局隐藏
+                // 防止滑动recyclerview时，touch事件拦截recyclerview的滚动事件
                 if (motionEvent.getAction() == MotionEvent.ACTION_DOWN) {
                     if (emotion_ll.isShown()) {
                         hideEmotionLayout();
@@ -188,12 +200,10 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
     private void initEmotions() {
         new AsyncTask<Void, Void, List<EmotionCategoryItem>>() {
-
             @Override
             protected List<EmotionCategoryItem> doInBackground(Void... voids) {
                 return mEmotionAssetDbHelper.queryEmotionList(EmotionAssetDbHelper.DB_EMOTION);
             }
-
             @Override
             protected void onPostExecute(List<EmotionCategoryItem> emotionCategoryItems) {
                 addEmotionFragments(emotionCategoryItems);
@@ -235,6 +245,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     };
 
+    /** 识别输入的表情*/
     private InputFilter editFilter = new InputFilter() {
         @Override
         public CharSequence filter(CharSequence source, int i, int i1, Spanned spanned, int i2, int i3) {
@@ -266,6 +277,9 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    /**
+     * 刷新消息列表
+     */
     private void refreshMessageList() {
         String text = input_edit.getText().toString();
         Message message = new Message(text, "");
@@ -277,12 +291,12 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
     @Override
     public void onEmotionItemClick(Emotion emotion, boolean isDelItem) {
-        if (emotion != null && !isDelItem) {
+        if (emotion != null && !isDelItem) { //点击表情时，在输入框中插入标签
             String name = emotion.getName();
             Editable editable = input_edit.getEditableText();
             int start = input_edit.getSelectionStart();
             editable.insert(start, name);
-        } else {
+        } else { //当点击的是删除按钮时，删除文字或者表情
             input_edit.dispatchKeyEvent(new KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_DEL));
         }
     }
@@ -377,6 +391,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
+    /** 添加分类标签fragment*/
     private void addEmotionFragments(List<EmotionCategoryItem> categoryItems) {
         for (EmotionCategoryItem categoryItem : categoryItems) {
             mCategoryFragments.add(EmotionFragment.newInstance((ArrayList<Emotion>) categoryItem.getEmotionList()));
@@ -449,6 +464,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
+            // 点击返回按钮时，如果表情布局或者键盘正在显示则先隐藏
             if (emotion_ll.isShown()) {
                 hideEmotionLayout();
                 hideInputKeyBoard(true);
