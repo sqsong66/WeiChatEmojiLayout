@@ -26,6 +26,11 @@ public class EmotionGridAdapter extends RecyclerView.Adapter<EmotionGridAdapter.
     private OnEmotionItemClickListener listener;
 
     public interface OnEmotionItemClickListener {
+        /**
+         * 表情item点击事件回调
+         * @param emotion 表情信息
+         * @param isDelItem 是否点击的是删除按钮
+         */
         void onEmotionItemClick(Emotion emotion, boolean isDelItem);
     }
 

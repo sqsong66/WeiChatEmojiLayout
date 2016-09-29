@@ -141,12 +141,10 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
 
         emotion_viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
-            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
-            }
+            public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {}
 
             @Override
-            public void onPageScrollStateChanged(int state) {
-            }
+            public void onPageScrollStateChanged(int state) {}
 
             @Override
             public void onPageSelected(int position) {
@@ -286,6 +284,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         mMessageList.add(message);
         mMessageAdapter.notifyItemInserted(mMessageList.size());
         input_edit.setText("");
+        //消息列表滚动到最底部
         message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
     }
 
@@ -341,6 +340,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         emotion_ll.getLayoutParams().height = inputKeyBoardHeight;
         emotion_ll.setVisibility(View.VISIBLE);
         emotion_face_iv.setImageResource(R.drawable.selector_publish_keyboard);
+        //表情布局显示时，消息列表滚动到最底部
         message_recyclerView.smoothScrollToPosition(mMessageAdapter.getItemCount());
     }
 
@@ -391,7 +391,7 @@ public class EmotionActivity extends AppCompatActivity implements View.OnClickLi
         }
     }
 
-    /** 添加分类标签fragment*/
+    /** 添加分类表情fragment*/
     private void addEmotionFragments(List<EmotionCategoryItem> categoryItems) {
         for (EmotionCategoryItem categoryItem : categoryItems) {
             mCategoryFragments.add(EmotionFragment.newInstance((ArrayList<Emotion>) categoryItem.getEmotionList()));

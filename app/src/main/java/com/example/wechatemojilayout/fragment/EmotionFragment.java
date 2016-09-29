@@ -67,13 +67,14 @@ public class EmotionFragment extends Fragment implements OnEmotionItemClickListe
         List<Emotion> emotionList = new ArrayList<>();
         for (Emotion emotion: mEmotionLists) {
             emotionList.add(emotion);
-            if (emotionList.size() == 20) {
+            if (emotionList.size() == 20) { //每20个表情创建一页表情
                 RecyclerView singlePageRecycler = createSinglePageRecyclerView(emotionList);
                 emotionRecyclerLists.add(singlePageRecycler);
                 emotionList = new ArrayList<>();
             }
         }
 
+        //最后剩余的表情作为一页
         if (emotionList.size() > 0) {
             RecyclerView emotionRecyclerView = createSinglePageRecyclerView(emotionList);
             emotionRecyclerLists.add(emotionRecyclerView);
@@ -82,17 +83,20 @@ public class EmotionFragment extends Fragment implements OnEmotionItemClickListe
         EmotionViewPagerAdapter pagerAdapter = new EmotionViewPagerAdapter(emotionRecyclerLists);
         emotion_viewpager.setAdapter(pagerAdapter);
 
+        //设置导航圆点
         final CirclePagerIndicator indicator = new CirclePagerIndicator(getActivity());
         indicator.setCircleCount(emotionRecyclerLists.size());
         indicator.setNormalColor(getResources().getColor(R.color.color_E4E4E4));
         indicator.setFocusColor(getResources().getColor(R.color.color_999999));
 
+        //将导航圆点添加到圆点容器中
         LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.MATCH_PARENT);
         dot_ll.addView(indicator, lp);
 
         emotion_viewpager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
             public void onPageScrolled(int position, float positionOffset, int positionOffsetPixels) {
+                //关联ViewPager
                 indicator.onPageScrolled(position, positionOffset, positionOffsetPixels);
             }
 

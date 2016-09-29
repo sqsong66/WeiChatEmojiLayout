@@ -44,13 +44,11 @@ public class DensityUtils {
 
     public static int getSupportSoftInputHeight(Activity activity) {
         Rect r = new Rect();
-        /**
-         * decorView是window中的最顶层view，可以从window中通过getDecorView获取到decorView。
-         * 通过decorView获取到程序显示的区域，包括标题栏，但不包括状态栏。
-         */
+        /** decorView是window中的最顶层view，可以从window中通过getDecorView获取到decorView,
+         通过decorView获取到程序显示的区域，包括标题栏，但不包括状态栏 */
         activity.getWindow().getDecorView().getWindowVisibleDisplayFrame(r);
         //获取屏幕的高度
-        int screenHeight = activity.getWindow().getDecorView().getRootView().getHeight();
+        int screenHeight = DensityUtils.getScreenHeight();
         //计算软件盘的高度
         int softInputHeight = screenHeight - r.bottom;
 
